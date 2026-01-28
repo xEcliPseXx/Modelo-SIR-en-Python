@@ -1,0 +1,252 @@
+import numpy as np   # numpy s'utilitza per a realitzar càlculs numèrics.
+import pylab as plt  # pylab és una biblioteca que proporciona funcions de visualització
+import sys # biblioteca estàndard de Python
+
+# Nombre reproductiu bàsic i Temps x2 (casos hipotètics)
+
+R0=np.linspace(1.01,14.5,100) # array de 100 posicions nombre reproductiu bàsic en un rang
+tempsx2 = np.log(float(2))/(gamma*(R0-1)) # per a cada valor de R0 calculem el temps que tardaría en dulicarse el nombre de casos
+plt.figure(figsize=(11,7))
+
+plt.plot(R0,tempsx2)
+
+gamma = 0.014 # taxa de recuperació
+mu = 0.0028 # taxa de mortalitat
+
+# Dades COVID-19
+
+plt.axhline(3,linestyle=':',color='blue')
+plt.axhline(4,linestyle=':',color='red')
+plt.axhline(30,linestyle=':',color='green')
+#plt.axhline(6,linestyle=':',color='black')
+
+plt.annotate('$Regne Unit$', xy=(10.0,3-1),color='blue')
+plt.annotate('$Estats Units$',xy=(10.0,4+1),color='red')
+plt.annotate('$India$',xy=(10.0,30+10) ,color='green')
+#plt.annotate('$Marroc$',xy=(10.0,6),color='black')
+
+plt.title("COVID-19 Nombre reproductiu bàsic - Temps x2")
+plt.ylabel("$t_{\mathrm{X2}}$")
+plt.xlabel("$R_0$")
+plt.yscale('log')
+
+plt.rc('font', size= 14)                   
+plt.rc('axes', titlesize= 14)               
+plt.rc('axes', labelsize= 16)           
+plt.rc('xtick', labelsize= 14)              
+plt.rc('ytick', labelsize= 14)             
+plt.rc('legend', fontsize= 14)                        
+plt.rc('figure', titlesize= 16)         
+
+#plt.show()
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+def tria_localitat(nom):
+
+    if (nom == 'Regne Unit'):
+        N = 6.8e7  # població total
+        I0 = 340546 # nombre inicial d'infectats
+        tempsx2 = 5 
+      
+    elif (nom== "Estats Units"):
+        N=7.566e6
+        I0=2.42112e6
+        tempsx2 = 8
+     
+    elif (nom=="India"):
+        N=1.4e9
+        I0=1e5
+        tempsx2=770.
+    
+    elif (nom=="Marroc"):
+        N=3.2e8
+        I0=2e3
+        tempsx2=2.4
+
+    else:
+        print("No existeix la poblacio")
+        sys.exit()
+        
+    beta = gamma + np.log(float(2))/tempsx2 
+    R0 = beta/gamma
+
+    poblacio = dict([('nom', nom), #aquí creem un diccionari on guardem els paràmetres que ens interessen
+                    ('beta', beta),
+                    ('gamma', gamma),
+                    ('I0',I0),
+                    ('N',N),
+                    ('R0',R0),
+                    ('tempsx2',tempsx2)])
+
+    print("Paràmetres per:",poblacio['nom'])
+    print(f'R0 = {R0:.1f}')
+    print("TempsX2 =",tempsx2,"dies")
+    print(f'Taxa de transmissió = {beta:.2f}')
+
+    return poblacio
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+def valors(S,I,R,t,SS,II,RR,tt): #aquí guardem en llistes de valors actuals i els valors històrics de cada element del nostre model
+    SS.append(S)
+    II.append(I)
+    RR.append(R)
+    tt.append(t)
+    return SS,II,RR,tt
+
+def runge(f):
+    beta  = f['beta']
+    gamma = f['gamma']
+    I0    = f['I0']
+    R0    = f['R0']
+    N     = f['N']
+    tx2   = f['tempsx2']
+    
+    alpha_ts = np.double([0.   , -5./9.  ,-153./128.])
+    beta_ts = np.double([1./3., 15./16. ,   8./15. ])
+    Cdt = 0.5 #constant de temps
+    tau_beta  = 1/beta 
+    dt = Cdt*tau_beta
+    tmax = 160
+
+# LListes per als compartiments 
+
+    SS=[]  # susceptible
+    II=[]  # infectat
+    RR=[]  # recuperat
+    DD=[]  # mort
+    tt=[]  # temps
+
+
+# Valors inicials 
+
+    I=I0/N
+    R=float(0)
+    S=1-I
+
+    dSdt=0.
+    dIdt=0.
+    dRdt=0.
+
+#  Integrem
+    itmax=100000    
+    t=0.
+    ds=0.
+    SS,II,RR,tt = valors(S,I,R,t,SS,II,RR,tt)
+
+    for it in np.arange(itmax):
+                                                                           
+        dt_beta_ts = [i * dt for i in beta_ts]
+                                                                             
+        for itsub in np.arange(0,2):
+            dSdt   = alpha_ts[itsub]*dSdt
+            dIdt   = alpha_ts[itsub]*dIdt
+            dRdt   = alpha_ts[itsub]*dRdt
+            ds     = alpha_ts[itsub]*ds
+                                                                                
+            dSdt = dSdt - beta*I*S 
+            dIdt = dIdt + beta*I*S - gamma*I
+            dRdt = dRdt + gamma*I
+            ds   = ds   + 1.    
+        
+            S = S + dt_beta_ts[itsub]*dSdt
+            I = I + dt_beta_ts[itsub]*dIdt
+            R = R + dt_beta_ts[itsub]*dRdt
+            t = t + dt_beta_ts[itsub]*ds
+
+        SS,II,RR,tt = valors(S,I,R,t,SS,II,RR,tt)
+    
+        if ((it == itmax) or t > tmax):
+            print(f'Final de la simulació: t = {np.int64(t):d} dies \n')
+           
+            # Aquí el que fem es separar els individus del compartiment recuperats entre recuperats i morts segons la taxa de mortalitat
+            
+            C=(1-mu)*R
+            D=mu*R
+        
+            print('Percentatge de la població no infectada, S =',np.int64(np.round(100*S)),'%')       
+            print('Percentatge de la població infectada, I =',np.int64(np.round(100*I)),'%')    
+            print('Percentatge de recuperats, R =',np.int64(np.round(100*R)),'%\n')
+        
+            print('Percentatge infectats al pic de la pandemia',np.int64(np.round(100*np.array(II).max())),'% \n')    
+            print(f'Número total de morts = {np.int64(np.round(D*N)):d}')
+
+            break
+            
+    resultats = dict([('Susceptible', SS), ('Infectat', II), ('Recuperat', RR),('Temps',tt)])
+        
+    return resultats
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+def grafics(poblacio,resultats):
+
+    t=np.array(resultats['Temps'])
+    S=np.array(resultats['Susceptible'])
+    R=np.array(resultats['Recuperat'])
+    I=np.array(resultats['Infectat'])
+    N=poblacio['N']
+    I0=I[0]*N
+    R0=poblacio['R0']
+    gamma=poblacio['gamma']
+    tx2 = poblacio['tempsx2']
+    
+    C=0.99*R
+    D=0.01*R
+
+    fig, ((ax1,ax2)) = plt.subplots(1,2,figsize=[16,5])
+
+    # Evolució de les poblacions
+
+    ax1.plot(t,100*S,color='blue',label='Susceptible')
+    ax1.plot(t,100*I,color='red',label='Infectat')
+    ax1.plot(t,100*C,color='green',label='Recuperat')
+    ax1.plot(t,100*D,color='black',label='Mort')
+
+# Cumulative number of infections and deaths 
+
+    ax2.plot(t,N*(1-S),color='red',label='Infeccions')
+    ax2.plot(t,N*D,color='black',label='Morts')
+
+# Sobreescriu la taxa exponencial inicial
+
+    label='TempsX2 = '+str(tx2)+' dies'
+    ax2.plot(t,I0*np.exp(gamma*(R0-1)*t),color='orange',linestyle='--',label=label)
+
+# Comentaris i part estètica
+
+    ax1.set_xlabel("Dies")
+    ax1.set_ylabel("Població (%)")
+    ax1.legend()
+    ax1.set_xlim([0,t.max()])
+    strR0 = str((R0))+'.'+str(np.int64(10*(R0-np.int64(R0))))
+    title=poblacio['nom']+", $\gamma=0.06,R_0=$"+strR0
+    ax1.set_title(title)
+    ax1.grid()
+
+    ax2.set_yscale("log")
+    ax2.set_ylim([I0/100.,1.5*N])
+    ax2.set_xlim([0,t.max()])
+    ax2.set_xlabel("Dies")
+    ax2.set_ylabel("Número acumulatiu de casos")
+    char = np.int64(np.log10(N))
+    mant = np.int64(np.round(10**(np.log10(N)-char)))
+    strlog = str(mant)+' x 10$^'+ str(char)+'$'
+    title=poblacio['nom']+", $N$="+strlog+", $I_0$="+ str(np.int64(I0))
+    ax2.set_title(title)
+    ax2.legend()
+    ax2.grid()
+
+    return 
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+print ("Paràmetres genérics:")
+print("Taxa de recuperació =",gamma)
+print("Taxa de mortalitat =",mu,"\n")
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+poblacio = tria_localitat('Regne Unit')
+f = grafics(poblacio,runge(poblacio))
