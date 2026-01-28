@@ -1,2 +1,5 @@
 # Modelo-SIR-en-Python
 Modelo matemático SIR implementado en Python y adaptado a los parámetros y atributos del COVID-19
+
+El siguiente artículo presenta una investigación y un análisis del modelo SIR aplicado a las pandemias, con el objetivo de proporcionar una comprensión clara del modelo. Se propone un programa que utiliza el modelo SIR para simular cómo podría desarrollarse una pandemia durante un período de tiempo determinado.
+El método empleado es un análisis del modelo SIR y de diferentes parámetros relacionados que ayudarán a comprenderlo. Los resultados muestran la importancia del modelo SIR para comprender la propagación de las epidemias y su aplicación en la toma de decisiones. Se destaca la incipiente implementación de herramientas de inteligencia artificial para mejorar la eficacia predictiva de los modelos que tienen como objetivo estudiar la dinámica de propagación de una enfermedad infecciosa. Las conclusiones resaltan la necesidad de utilizar modelos como el SIR con la capacidad de adaptarlos según los requisitos y factores de una pandemia.
